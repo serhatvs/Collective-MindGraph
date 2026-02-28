@@ -1,5 +1,5 @@
 [build]
-command = "npm run build -w @cmg/web"
+command = "npm run build -w @cmg/shared && npm run build -w @cmg/web"
 publish = "apps/web/dist"
 
 [[redirects]]

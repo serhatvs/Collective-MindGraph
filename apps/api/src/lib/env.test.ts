@@ -52,4 +52,17 @@ describe("loadEnv", () => {
     expect(env.AI_MODEL).toBe("gpt-4o-mini");
     expect(env.AI_TIMEOUT_MS).toBe(8_000);
   });
+
+  it("accepts platform PORT and Railway volume defaults", () => {
+    const env = loadEnv({
+      ...createBaseEnv(),
+      API_PORT: undefined,
+      DATABASE_PATH: undefined,
+      PORT: "8080",
+      RAILWAY_VOLUME_MOUNT_PATH: "/data"
+    });
+
+    expect(env.API_PORT).toBe(8080);
+    expect(env.DATABASE_PATH).toBe("/data/collective-mindgraph.sqlite");
+  });
 });

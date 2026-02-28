@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 const rawEnvSchema = z.object({
-  API_PORT: z.coerce.number().int().positive().default(4000),
+  API_PORT: z.coerce.number().int().positive().optional(),
+  PORT: z.coerce.number().int().positive().optional(),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
-  DATABASE_PATH: z.string().default("./data/collective-mindgraph.sqlite"),
+  DATABASE_PATH: z.string().optional(),
+  RAILWAY_VOLUME_MOUNT_PATH: z.string().trim().min(1).optional(),
   MONAD_RPC_URL: z.url(),
   RELAYER_PRIVATE_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
   CONTRACT_ADDRESS: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
@@ -38,9 +40,9 @@ export function loadEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
   const parsed = rawEnvSchema.parse(env);
 
   return {
-    API_PORT: parsed.API_PORT,
+    API_PORT: resolveApiPort(parsed),
     CORS_ORIGIN: parsed.CORS_ORIGIN,
-    DATABASE_PATH: parsed.DATABASE_PATH,
+    DATABASE_PATH: resolveDatabasePath(parsed),
     MONAD_RPC_URL: parsed.MONAD_RPC_URL,
     RELAYER_PRIVATE_KEY: parsed.RELAYER_PRIVATE_KEY,
     CONTRACT_ADDRESS: parsed.CONTRACT_ADDRESS,
@@ -67,6 +69,22 @@ function resolveAiModel(parsed: z.infer<typeof rawEnvSchema>): string {
   }
 
   return parsed.OPENAI_MODEL ?? "gpt-4o-mini";
+}
+
+function resolveApiPort(parsed: z.infer<typeof rawEnvSchema>): number {
+  return parsed.API_PORT ?? parsed.PORT ?? 4000;
+}
+
+function resolveDatabasePath(parsed: z.infer<typeof rawEnvSchema>): string {
+  if (parsed.DATABASE_PATH) {
+    return parsed.DATABASE_PATH;
+  }
+
+  if (parsed.RAILWAY_VOLUME_MOUNT_PATH) {
+    return `${parsed.RAILWAY_VOLUME_MOUNT_PATH}/collective-mindgraph.sqlite`;
+  }
+
+  return "./data/collective-mindgraph.sqlite";
 }
 
 function resolveAiTimeout(parsed: z.infer<typeof rawEnvSchema>): number {

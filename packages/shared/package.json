@@ -4,10 +4,13 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsup src/index.ts --format esm --dts --target es2022 --out-dir dist",
     "test": "vitest run"
   },
   "dependencies": {
@@ -15,8 +18,8 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "tsup": "^8.5.0",
     "typescript": "^5.8.2",
     "vitest": "^3.2.4"
   }
 }
-
