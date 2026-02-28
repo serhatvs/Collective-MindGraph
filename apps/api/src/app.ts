@@ -23,6 +23,34 @@ export interface AppServices {
   enrichmentService?: EnrichmentService;
 }
 
+function sanitizeOriginValue(value: string): string {
+  return value.trim().replace(/\/+$/, "");
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[|\\{}()[\]^$+?.*]/g, "\\$&");
+}
+
+function matchesConfiguredOrigin(origin: string, configuredOrigin: string): boolean {
+  const normalizedOrigin = sanitizeOriginValue(origin);
+  const normalizedConfiguredOrigin = sanitizeOriginValue(configuredOrigin);
+
+  if (!normalizedConfiguredOrigin.includes("*")) {
+    return normalizedOrigin === normalizedConfiguredOrigin;
+  }
+
+  const wildcardPattern = new RegExp(`^${escapeRegex(normalizedConfiguredOrigin).replace(/\\\*/g, ".*")}$`);
+  return wildcardPattern.test(normalizedOrigin);
+}
+
+function isAllowedConfiguredOrigin(origin: string, corsOrigin: string): boolean {
+  return corsOrigin
+    .split(",")
+    .map((value) => sanitizeOriginValue(value))
+    .filter(Boolean)
+    .some((configuredOrigin) => matchesConfiguredOrigin(origin, configuredOrigin));
+}
+
 function isAllowedDevOrigin(origin: string): boolean {
   try {
     const url = new URL(origin);
@@ -64,7 +92,7 @@ export async function buildApp({
         return;
       }
 
-      if (origin === corsOrigin || isAllowedDevOrigin(origin)) {
+      if (isAllowedConfiguredOrigin(origin, corsOrigin) || isAllowedDevOrigin(origin)) {
         callback(null, true);
         return;
       }

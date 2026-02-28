@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "installCommand": "npm install --include=dev --workspaces",
-  "buildCommand": "npm run build -w @cmg/shared && npm run build -w @cmg/web",
+  "installCommand": "npm install --include=dev --workspace @cmg/shared --workspace @cmg/web",
+  "buildCommand": "npm run build:web",
   "outputDirectory": "apps/web/dist",
   "rewrites": [
     {

@@ -508,4 +508,62 @@ describe("API integration", () => {
     expect(node?.aiStatus).toBe("failed");
   });
 
+  it("allows multiple configured origins including Vercel preview wildcards", async () => {
+    const { temp, db, chainService, aiService, streamLock, enrichmentService } = setup();
+    const app = await buildApp({
+      db,
+      chainService,
+      aiService,
+      streamLock,
+      enrichmentService,
+      logger: false,
+      corsOrigin: "https://collective-mindgraph.vercel.app,https://collective-mindgraph-*.vercel.app"
+    });
+    cleanups.push(async () => {
+      await app.close();
+      db.close();
+      temp.cleanup();
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/health",
+      headers: {
+        origin: "https://collective-mindgraph-git-main-victus.vercel.app"
+      }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["access-control-allow-origin"]).toBe("https://collective-mindgraph-git-main-victus.vercel.app");
+  });
+
+  it("rejects origins outside the configured allow-list", async () => {
+    const { temp, db, chainService, aiService, streamLock, enrichmentService } = setup();
+    const app = await buildApp({
+      db,
+      chainService,
+      aiService,
+      streamLock,
+      enrichmentService,
+      logger: false,
+      corsOrigin: "https://collective-mindgraph.vercel.app,https://collective-mindgraph-*.vercel.app"
+    });
+    cleanups.push(async () => {
+      await app.close();
+      db.close();
+      temp.cleanup();
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/health",
+      headers: {
+        origin: "https://different-project.vercel.app"
+      }
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json().code).toBe("INTERNAL_SERVER_ERROR");
+  });
+
 });

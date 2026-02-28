@@ -10,6 +10,7 @@
     "dev": "concurrently \"npm run dev -w @cmg/api\" \"npm run dev -w @cmg/web\"",
     "dev:web": "npm run dev -w @cmg/web",
     "dev:api": "npm run dev -w @cmg/api",
+    "build:web": "npm run build -w @cmg/web",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "deploy:contract": "npm run deploy -w @cmg/contracts",

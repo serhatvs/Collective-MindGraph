@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build -w @cmg/shared && tsc --noEmit && vite build"
+    "build": "npm --prefix ../../packages/shared run build && tsc --noEmit && vite build"
   },
   "dependencies": {
     "@cmg/shared": "file:../../packages/shared",
