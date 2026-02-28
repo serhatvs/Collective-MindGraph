@@ -5,7 +5,9 @@
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "types": [
-      "vite/client"
+      "vite/client",
+      "react",
+      "react-dom"
     ]
   },
   "include": [
@@ -13,4 +15,3 @@
     "vite.config.ts"
   ]
 }
-
