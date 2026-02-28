@@ -1,0 +1,22 @@
+{
+  "name": "@cmg/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "viem": "^2.37.5",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
+  }
+}
+

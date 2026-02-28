@@ -1,0 +1,23 @@
+{
+  "name": "collective-mindgraph",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "contracts"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w @cmg/api\" \"npm run dev -w @cmg/web\"",
+    "dev:web": "npm run dev -w @cmg/web",
+    "dev:api": "npm run dev -w @cmg/api",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "deploy:contract": "npm run deploy -w @cmg/contracts",
+    "smoke:contract": "npm run smoke -w @cmg/contracts",
+    "smoke:api": "npm run smoke:api -w @cmg/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@cmg/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --noEmit && tsup src/index.ts --format esm --target es2022 --out-dir dist",
+    "test": "vitest run",
+    "smoke:api": "tsx scripts/contractSmoke.ts"
+  },
+  "dependencies": {
+    "@cmg/shared": "file:../../packages/shared",
+    "@fastify/cors": "^11.1.0",
+    "better-sqlite3": "^12.4.1",
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.1",
+    "openai": "^6.25.0",
+    "viem": "^2.37.5",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.5.2",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
+  }
+}
