@@ -1,0 +1,15 @@
+{
+  "session_id": "demo-session-transcript",
+  "device_id": "sim-device-01",
+  "items": [
+    {
+      "text": "We need a clear root idea for the team.",
+      "confidence": 0.99
+    },
+    {
+      "text": "This override request should trigger a repaired parent.",
+      "confidence": 0.97
+    }
+  ]
+}
+
