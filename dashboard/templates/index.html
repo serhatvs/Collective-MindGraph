@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Collective MindGraph Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="panel">
+      <h1>Collective MindGraph</h1>
+      <p class="muted">Read-only operations dashboard</p>
+      <div class="meta">
+        <span>Sessions: {{ sessions|length }}</span>
+        <span>Heartbeats: {{ heartbeats|length }}</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Agent Health</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Status</th>
+            <th>Last Processed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for hb in heartbeats %}
+          <tr>
+            <td>{{ hb.agent_name }}</td>
+            <td>{{ hb.status }}</td>
+            <td>{{ hb.last_processed_at or "-" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Sessions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Device</th>
+            <th>Status</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in sessions %}
+          <tr>
+            <td>{{ session.session_id }}</td>
+            <td>{{ session.device_id }}</td>
+            <td>{{ session.status }}</td>
+            <td>{{ session.updated_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    {% if selected_session %}
+    <section class="panel">
+      <h2>Latest Snapshot</h2>
+      <p><strong>Session:</strong> {{ selected_session.session_id }}</p>
+      <p><strong>Hash:</strong> {{ latest_snapshot.hash_sha256 if latest_snapshot else "-" }}</p>
+      <p><strong>Nodes:</strong> {{ latest_snapshot.node_count if latest_snapshot else 0 }}</p>
+    </section>
+
+    <section class="panel">
+      <h2>Latest Transcripts</h2>
+      <ul>
+        {% for transcript in transcripts %}
+        <li>{{ transcript.created_at }} | {{ transcript.text }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Latest Graph Nodes</h2>
+      <ul>
+        {% for node in nodes %}
+        <li>{{ node.created_at }} | {{ node.branch_type }} | {{ node.node_text }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </main>
+</body>
+</html>
+

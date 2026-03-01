@@ -1,0 +1,15 @@
+{
+  "session_id": "demo-session-frame",
+  "device_id": "sim-device-01",
+  "utterances": [
+    {
+      "text": "Frames can be aggregated into a stable utterance for the demo.",
+      "flush": "silence"
+    },
+    {
+      "text": "This override parent request should force a repaired attachment.",
+      "flush": "speech_final"
+    }
+  ]
+}
+

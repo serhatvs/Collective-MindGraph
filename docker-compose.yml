@@ -1,0 +1,264 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-collective_mindgraph}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-collective_mindgraph}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -p 1883 -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mock-llm:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "mocks.llm_json_service.app.main"]
+    environment:
+      APP_NAME: mock-llm
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      DASHBOARD_PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+
+  mock-stt:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "mocks.stt_service.app.main"]
+    environment:
+      APP_NAME: mock-stt
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      DASHBOARD_PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+
+  session-controller-agent:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "agents.session_controller.app.main"]
+    environment:
+      APP_NAME: session-controller-agent
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+
+  frame-aggregator-agent:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "agents.frame_aggregator.app.main"]
+    environment:
+      APP_NAME: frame-aggregator-agent
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-5}
+      FRAME_SILENCE_TIMEOUT_SECONDS: ${FRAME_SILENCE_TIMEOUT_SECONDS:-1.2}
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+  stt-agent:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "agents.stt.app.main"]
+    environment:
+      APP_NAME: stt-agent
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-5}
+      STT_SERVICE_URL: ${STT_SERVICE_URL:-http://mock-stt:8080}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+      mock-stt:
+        condition: service_started
+
+  llm-tree-orchestrator-agent:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "agents.llm_tree_orchestrator.app.main"]
+    environment:
+      APP_NAME: llm-tree-orchestrator-agent
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-5}
+      LLM_SERVICE_URL: ${LLM_SERVICE_URL:-http://mock-llm:8080}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+      mock-llm:
+        condition: service_started
+
+  consistency-agent:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "agents.consistency.app.main"]
+    environment:
+      APP_NAME: consistency-agent
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+
+  graph-writer-agent:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "agents.graph_writer.app.main"]
+    environment:
+      APP_NAME: graph-writer-agent
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+
+  snapshot-agent:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "agents.snapshot.app.main"]
+    environment:
+      APP_NAME: snapshot-agent
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-5}
+      SNAPSHOT_INTERVAL_SECONDS: ${SNAPSHOT_INTERVAL_SECONDS:-10}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard.Dockerfile
+    command: ["python", "-m", "dashboard.app.main"]
+    environment:
+      APP_NAME: dashboard
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://postgres:postgres@postgres:5432/collective_mindgraph}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-5}
+      DASHBOARD_PORT: ${DASHBOARD_PORT:-8000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    ports:
+      - "${DASHBOARD_PORT:-8000}:8000"
+
+  transcript-fixture-publisher:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "simulators.transcript_fixture_publisher.app.main"]
+    environment:
+      APP_NAME: transcript-fixture-publisher
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    profiles: ["sim"]
+
+  segment-fixture-publisher:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "simulators.segment_fixture_publisher.app.main"]
+    environment:
+      APP_NAME: segment-fixture-publisher
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    profiles: ["sim"]
+
+  edge-frame-sim:
+    build:
+      context: .
+      dockerfile: docker/python-service.Dockerfile
+    command: ["python", "-m", "simulators.edge_frame_sim.app.main"]
+    environment:
+      APP_NAME: edge-frame-sim
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_QOS: ${MQTT_QOS:-1}
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    profiles: ["sim"]
+
+volumes:
+  postgres_data:

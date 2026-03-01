@@ -1,0 +1,9 @@
+{
+  "session_id": "demo-session-segment",
+  "device_id": "sim-device-01",
+  "items": [
+    "We should segment audio before calling STT.",
+    "This override branch should be repaired deterministically."
+  ]
+}
+
